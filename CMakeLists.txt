@@ -703,15 +703,19 @@ endif ()
 if (MSVC)
     # default for all sources is to use precompiled headers
     foreach(source ${sources})
-        set_source_files_properties(${source}
-            PROPERTIES
-            COMPILE_FLAGS "/Yuprecompiled.hpp"
-            )
+        if (NOT ${source} STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled.cpp")
+            set_source_files_properties(${source}
+                PROPERTIES
+                COMPILE_FLAGS "/Yuprecompiled.hpp"
+                OBJECT_DEPENDS precompiled.hpp
+                )
+        endif()
     endforeach()
     # create precompiled header
     set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled.cpp
         PROPERTIES
         COMPILE_FLAGS "/Ycprecompiled.hpp"
+        OBJECT_OUTPUTS precompiled.hpp
         )
     # C and C++ can not use the same precompiled header
     set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/tweetnacl.c
@@ -737,6 +741,9 @@ if (BUILD_STATIC)
 endif()
 
 if (MSVC)
+  # Suppress linker warnings caused by #ifdef omission
+  # of file content.
+  set( CMAKE_STATIC_LINKER_FLAGS /ignore:4221 )
   if (BUILD_SHARED)
     add_library (libzmq SHARED ${sources} ${public_headers} ${html-docs} ${readme-docs} ${CMAKE_CURRENT_BINARY_DIR}/NSIS.template.in)
     target_link_libraries (libzmq ${OPTIONAL_LIBRARIES})
